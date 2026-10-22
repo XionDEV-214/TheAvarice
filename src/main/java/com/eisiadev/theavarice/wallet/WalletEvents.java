@@ -1,0 +1,83 @@
+package com.eisiadev.theavarice.wallet;
+
+import com.eisiadev.theavarice.TheAvarice;
+import com.eisiadev.theavarice.config.AvariceConfig;
+import com.eisiadev.theavarice.currency.CurrencyTiers;
+import com.eisiadev.theavarice.util.SoundHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+import java.util.List;
+
+@Mod.EventBusSubscriber(modid = TheAvarice.MOD_ID)
+public final class WalletEvents {
+
+    private WalletEvents() {}
+
+    @SubscribeEvent
+    public static void onAttach(AttachCapabilitiesEvent<Entity> event) {
+        if (event.getObject() instanceof Player) {
+            event.addCapability(WalletCapability.KEY, new WalletProvider());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onClone(PlayerEvent.Clone event) {
+        event.getOriginal().reviveCaps();
+        event.getOriginal().getCapability(WalletCapability.WALLET).ifPresent(old ->
+                event.getEntity().getCapability(WalletCapability.WALLET).ifPresent(fresh -> fresh.copyFrom(old)));
+        event.getOriginal().invalidateCaps();
+    }
+
+    @SubscribeEvent
+    public static void onItemPickup(EntityItemPickupEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        ItemEntity itemEntity = event.getItem();
+        if (!itemEntity.isAlive() || itemEntity.hasPickUpDelay()) return;
+
+        ItemStack stack = itemEntity.getItem();
+        if (stack.isEmpty() || stack.hasTag()) return;
+        if (!isAllowedToTake(itemEntity, player)) return;
+
+        List<CurrencyTiers.Tier> tiers = CurrencyTiers.load();
+        CurrencyTiers.Tier matched = null;
+        for (CurrencyTiers.Tier tier : tiers) {
+            if (tier.item() == stack.getItem()) {
+                matched = tier;
+                break;
+            }
+        }
+        if (matched == null) return;
+
+        Wallet wallet = WalletCapability.get(player);
+        wallet.add(matched.id(), stack.getCount());
+        wallet.normalize(tiers);
+
+        stack.setCount(0);
+        event.setResult(Event.Result.ALLOW);
+
+        for (String raw : AvariceConfig.PICKUP_SOUNDS.get()) {
+            SoundHelper.play(player, raw);
+        }
+
+        if (player.containerMenu instanceof WalletMenu) {
+            WalletService.sync(player);
+        }
+    }
+
+    private static boolean isAllowedToTake(ItemEntity itemEntity, Player player) {
+        CompoundTag tag = itemEntity.saveWithoutId(new CompoundTag());
+        return !tag.hasUUID("Owner") || tag.getUUID("Owner").equals(player.getUUID());
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "enchantment.theavarice.avarice": "Avarice",
+  "gui.theavarice.wallet": "Wallet",
+  "gui.theavarice.wallet.withdraw_stack": "Left click: withdraw one stack",
+  "gui.theavarice.wallet.withdraw_one": "Right click: withdraw 1",
+  "gui.theavarice.wallet.withdraw_all": "Shift + left click: withdraw as many as fit",
+  "gui.theavarice.wallet.convert_up": "Convert to the next higher denomination",
+  "gui.theavarice.wallet.convert_down": "Convert to the next lower denomination",
+  "gui.theavarice.wallet.bulk": "Hold Shift: convert as many as possible",
+  "gui.theavarice.wallet.unavailable": "Not available",
+  "key.theavarice.open_wallet": "Open Wallet",
+  "key.categories.theavarice": "The Avarice"
+}

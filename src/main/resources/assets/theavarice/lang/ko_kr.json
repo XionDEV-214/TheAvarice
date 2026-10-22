@@ -1,0 +1,13 @@
+{
+  "enchantment.theavarice.avarice": "탐욕",
+  "gui.theavarice.wallet": "지갑",
+  "gui.theavarice.wallet.withdraw_stack": "좌클릭: 한 묶음 꺼내기",
+  "gui.theavarice.wallet.withdraw_one": "우클릭: 1개 꺼내기",
+  "gui.theavarice.wallet.withdraw_all": "Shift + 좌클릭: 들어갈 만큼 모두 꺼내기",
+  "gui.theavarice.wallet.convert_up": "한 단계 상위 화폐로 환전",
+  "gui.theavarice.wallet.convert_down": "한 단계 하위 화폐로 환전",
+  "gui.theavarice.wallet.bulk": "Shift: 가능한 만큼 모두 환전",
+  "gui.theavarice.wallet.unavailable": "환전할 수 없음",
+  "key.theavarice.open_wallet": "지갑 열기",
+  "key.categories.theavarice": "The Avarice"
+}
