@@ -72,25 +72,24 @@ public class AvariceEventHandler {
             }
 
             int orig = stack.getCount();
-            double raw = orig * multiplier;
-            int newCount = (int) raw;
-            if (random.nextDouble() < (raw - newCount)) newCount++;
+            int chunk = AvariceEnchantment.dropChunk(stack.getMaxStackSize());
+            long newCount = AvariceEnchantment.capDrop(
+                    AvariceEnchantment.multipliedCount(orig, multiplier, random.nextDouble()), chunk);
 
             if (debug) TheAvarice.LOGGER.debug("[Avarice] {} x{} -> x{}",
                     stack.getDisplayName().getString(), orig, newCount);
 
-            int max = stack.getMaxStackSize();
-            stack.setCount(Math.min(newCount, max));
-            int remaining = newCount - max;
+            stack.setCount((int) Math.min(newCount, chunk));
+            long remaining = newCount - chunk;
             while (remaining > 0) {
                 ItemStack copy = stack.copy();
-                copy.setCount(Math.min(remaining, max));
+                copy.setCount((int) Math.min(remaining, chunk));
                 ItemEntity extra = new ItemEntity(
                         itemEntity.level(),
                         itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), copy);
                 extra.setPickUpDelay(10);
                 toAdd.add(extra);
-                remaining -= max;
+                remaining -= chunk;
             }
         }
 

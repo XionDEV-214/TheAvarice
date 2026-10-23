@@ -8,7 +8,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class WalletNetwork {
 
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(TheAvarice.MOD_ID, "main"),
@@ -32,6 +32,26 @@ public final class WalletNetwork {
                 .encoder(WalletSyncPacket::encode)
                 .decoder(WalletSyncPacket::decode)
                 .consumerMainThread(WalletSyncPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(SwitchPagePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SwitchPagePacket::encode)
+                .decoder(SwitchPagePacket::decode)
+                .consumerMainThread(SwitchPagePacket::handle)
+                .add();
+        CHANNEL.messageBuilder(EnchantApplyPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(EnchantApplyPacket::encode)
+                .decoder(EnchantApplyPacket::decode)
+                .consumerMainThread(EnchantApplyPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(EnchantRulesPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(EnchantRulesPacket::encode)
+                .decoder(EnchantRulesPacket::decode)
+                .consumerMainThread(EnchantRulesPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(EnchantStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(EnchantStatusPacket::encode)
+                .decoder(EnchantStatusPacket::decode)
+                .consumerMainThread(EnchantStatusPacket::handle)
                 .add();
     }
 }

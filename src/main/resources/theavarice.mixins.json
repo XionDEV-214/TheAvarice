@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.eisiadev.theavarice.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "theavarice.refmap.json",
+  "mixins": [
+    "AnvilMenuMixin",
+    "EnchantmentHelperMixin",
+    "GrindstoneMenuMixin"
+  ],
+  "client": [
+    "client.ClientLanguageMixin",
+    "client.MouseHandlerAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

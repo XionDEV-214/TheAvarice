@@ -1,6 +1,7 @@
 package com.eisiadev.theavarice.client;
 
 import com.eisiadev.theavarice.currency.CurrencyTiers;
+import com.eisiadev.theavarice.network.SwitchPagePacket;
 import com.eisiadev.theavarice.network.WalletActionPacket;
 import com.eisiadev.theavarice.network.WalletNetwork;
 import com.eisiadev.theavarice.wallet.ClientWalletState;
@@ -39,6 +40,10 @@ public class WalletScreen extends AbstractContainerScreen<WalletMenu> {
     private static final int ZONE_BODY = 0;
     private static final int ZONE_UP = 1;
     private static final int ZONE_DOWN = 2;
+    private static final int ENCHANT_W = 44;
+    private static final int ENCHANT_H = 12;
+    private static final int ENCHANT_X = WalletMenu.WIDTH - 8 - ENCHANT_W;
+    private static final int ENCHANT_Y = 4;
 
     private final NumberFormat format = NumberFormat.getIntegerInstance(Locale.US);
     private int scroll;
@@ -123,6 +128,13 @@ public class WalletScreen extends AbstractContainerScreen<WalletMenu> {
             graphics.fill(sx, sy, sx + 16, sy + 16, 0xFF8B8B8B);
         }
 
+        boolean enchantHovered = onEnchantButton(mouseX, mouseY);
+        graphics.fill(x + ENCHANT_X, y + ENCHANT_Y, x + ENCHANT_X + ENCHANT_W, y + ENCHANT_Y + ENCHANT_H, 0xFF000000);
+        graphics.fill(x + ENCHANT_X + 1, y + ENCHANT_Y + 1, x + ENCHANT_X + ENCHANT_W - 1, y + ENCHANT_Y + ENCHANT_H - 1,
+                enchantHovered ? 0xFFB8B8B8 : 0xFF9C9C9C);
+        graphics.drawCenteredString(font, Component.translatable("gui.theavarice.wallet.enchant"),
+                x + ENCHANT_X + ENCHANT_W / 2, y + ENCHANT_Y + 2, 0xFFFFFF);
+
         graphics.fill(x + ROW_X - 1, y + WalletMenu.ROWS_Y - 1,
                 x + ROW_X + ROW_W + 1, y + WalletMenu.ROWS_Y + WalletMenu.VISIBLE_ROWS * WalletMenu.ROW_H,
                 0xFF373737);
@@ -179,7 +191,19 @@ public class WalletScreen extends AbstractContainerScreen<WalletMenu> {
         graphics.drawCenteredString(font, label, bx + BUTTON / 2, by + 4, enabled ? 0xFFFFFF : 0x909090);
     }
 
+    private boolean onEnchantButton(double mouseX, double mouseY) {
+        double relX = mouseX - leftPos;
+        double relY = mouseY - topPos;
+        return relX >= ENCHANT_X && relX < ENCHANT_X + ENCHANT_W && relY >= ENCHANT_Y && relY < ENCHANT_Y + ENCHANT_H;
+    }
+
     private void renderWalletTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (onEnchantButton(mouseX, mouseY)) {
+            graphics.renderComponentTooltip(font, List.of(
+                    Component.translatable("gui.theavarice.wallet.enchant.tooltip"),
+                    gray("gui.theavarice.wallet.enchant.tooltip2")), mouseX, mouseY);
+            return;
+        }
         int index = rowAt(mouseX, mouseY);
         if (index < 0) return;
 
@@ -215,6 +239,13 @@ public class WalletScreen extends AbstractContainerScreen<WalletMenu> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && onEnchantButton(mouseX, mouseY)) {
+            Minecraft.getInstance().getSoundManager()
+                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            CursorKeeper.remember();
+            WalletNetwork.CHANNEL.sendToServer(new SwitchPagePacket(SwitchPagePacket.Page.ENCHANT));
+            return true;
+        }
         int index = rowAt(mouseX, mouseY);
         if (index >= 0 && (button == 0 || button == 1)) {
             boolean shift = hasShiftDown();

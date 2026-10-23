@@ -43,6 +43,22 @@ public final class WalletService {
         WalletNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new WalletSyncPacket(entries));
     }
 
+    public static long[] values(List<CurrencyTiers.Tier> tiers) {
+        long[] out = new long[tiers.size()];
+        for (int i = 0; i < out.length; i++) out[i] = tiers.get(i).value();
+        return out;
+    }
+
+    public static long[] counts(Wallet wallet, List<CurrencyTiers.Tier> tiers) {
+        long[] out = new long[tiers.size()];
+        for (int i = 0; i < out.length; i++) out[i] = wallet.get(tiers.get(i).id());
+        return out;
+    }
+
+    public static void setCounts(Wallet wallet, List<CurrencyTiers.Tier> tiers, long[] counts) {
+        for (int i = 0; i < counts.length; i++) wallet.set(tiers.get(i).id(), counts[i]);
+    }
+
     public static void handle(ServerPlayer player, int index, WalletAction action) {
         if (!(player.containerMenu instanceof WalletMenu)) return;
 

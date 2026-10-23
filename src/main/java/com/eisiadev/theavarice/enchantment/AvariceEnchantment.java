@@ -1,5 +1,6 @@
 package com.eisiadev.theavarice.enchantment;
 
+import com.eisiadev.theavarice.config.AvariceConfig;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -12,6 +13,22 @@ public class AvariceEnchantment extends Enchantment {
 
     public static double getMultiplier(int level) {
         return 1.0 + level;
+    }
+
+    public static long multipliedCount(int original, double multiplier, double roll) {
+        double raw = original * multiplier;
+        long count = (long) Math.min(raw, (double) Long.MAX_VALUE / 2);
+        if (roll < (raw - Math.floor(raw))) count++;
+        return count;
+    }
+
+    public static int dropChunk(int maxStackSize) {
+        int limit = AvariceConfig.AVARICE_DROP_MERGE_LIMIT.get();
+        return limit <= 0 ? Math.max(1, maxStackSize) : limit;
+    }
+
+    public static long capDrop(long count, int chunk) {
+        return Math.min(count, (long) chunk * AvariceConfig.AVARICE_MAX_DROP_ENTITIES.get());
     }
 
     public AvariceEnchantment() {

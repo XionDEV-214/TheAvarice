@@ -60,19 +60,18 @@ public class AvariceGlobalLootModifier extends LootModifier {
             if (stack.isEmpty()) continue;
 
             int orig = stack.getCount();
-            double raw = orig * multiplier;
-            int newCount = (int) raw;
-            if (random.nextDouble() < (raw - newCount)) newCount++;
+            int chunk = AvariceEnchantment.dropChunk(stack.getMaxStackSize());
+            long newCount = AvariceEnchantment.capDrop(
+                    AvariceEnchantment.multipliedCount(orig, multiplier, random.nextDouble()), chunk);
 
             if (debug) TheAvarice.LOGGER.debug("[Avarice] GLM: {} x{} -> x{}",
                     stack.getDisplayName().getString(), orig, newCount);
 
-            int max = stack.getMaxStackSize();
             while (newCount > 0) {
                 ItemStack copy = stack.copy();
-                copy.setCount(Math.min(newCount, max));
+                copy.setCount((int) Math.min(newCount, chunk));
                 result.add(copy);
-                newCount -= max;
+                newCount -= chunk;
             }
         }
 

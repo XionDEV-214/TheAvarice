@@ -71,7 +71,8 @@ public final class WalletEvents {
             SoundHelper.play(player, raw);
         }
 
-        if (player.containerMenu instanceof WalletMenu) {
+        if (player.containerMenu instanceof WalletMenu
+                || player.containerMenu instanceof com.eisiadev.theavarice.enchant.EnchantMenu) {
             WalletService.sync(player);
         }
     }

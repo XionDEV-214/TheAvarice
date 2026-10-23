@@ -42,7 +42,10 @@ public final class WalletKeys {
 
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            event.enqueueWork(() -> MenuScreens.register(MenuRegistry.WALLET.get(), WalletScreen::new));
+            event.enqueueWork(() -> {
+                MenuScreens.register(MenuRegistry.WALLET.get(), WalletScreen::new);
+                MenuScreens.register(MenuRegistry.ENCHANT.get(), EnchantScreen::new);
+            });
         }
     }
 
