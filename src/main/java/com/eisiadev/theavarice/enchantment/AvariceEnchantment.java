@@ -22,6 +22,13 @@ public class AvariceEnchantment extends Enchantment {
         return count;
     }
 
+    /**
+     * Avarice 배수 적용 대상인지. 아이템 자체의 max stack 이 1 이하(장비·도구 등)이면 제외한다.
+     */
+    public static boolean isAffected(ItemStack stack) {
+        return !stack.isEmpty() && stack.getMaxStackSize() > 1;
+    }
+
     public static int dropChunk(int maxStackSize) {
         int limit = AvariceConfig.AVARICE_DROP_MERGE_LIMIT.get();
         return limit <= 0 ? Math.max(1, maxStackSize) : limit;

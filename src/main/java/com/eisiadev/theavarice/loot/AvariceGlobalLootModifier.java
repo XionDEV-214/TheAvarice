@@ -59,6 +59,12 @@ public class AvariceGlobalLootModifier extends LootModifier {
         for (ItemStack stack : generatedLoot) {
             if (stack.isEmpty()) continue;
 
+            // max stack 1 (장비 등)은 배수 없이 그대로 통과
+            if (!AvariceEnchantment.isAffected(stack)) {
+                result.add(stack);
+                continue;
+            }
+
             int orig = stack.getCount();
             int chunk = AvariceEnchantment.dropChunk(stack.getMaxStackSize());
             long newCount = AvariceEnchantment.capDrop(

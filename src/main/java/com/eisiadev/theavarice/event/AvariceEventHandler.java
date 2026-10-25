@@ -71,6 +71,13 @@ public class AvariceEventHandler {
                 continue;
             }
 
+            // max stack 1 (장비 등)은 배수 적용 제외
+            if (!AvariceEnchantment.isAffected(stack)) {
+                if (debug) TheAvarice.LOGGER.debug("[Avarice] Skip {} (max stack 1)",
+                        stack.getDisplayName().getString());
+                continue;
+            }
+
             int orig = stack.getCount();
             int chunk = AvariceEnchantment.dropChunk(stack.getMaxStackSize());
             long newCount = AvariceEnchantment.capDrop(
