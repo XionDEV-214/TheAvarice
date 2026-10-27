@@ -26,7 +26,6 @@ public class ChuteWidget extends WalletWidget<ChuteWidget> implements Interactab
     public static final int W = 56;
     public static final int H = 64;
     public static final int LIP_H = 12;
-    public static final int COLUMNS = 3;
     private static final int FALL_MS = 700;
     private static final int FADE_MS = 380;
 
@@ -55,13 +54,17 @@ public class ChuteWidget extends WalletWidget<ChuteWidget> implements Interactab
         });
     }
 
-    /** Resting position of tray slot {@code i} inside the chute: bottom row fills first. */
+    /**
+     * Resting position of tray slot {@code i}, same as VendingMachine's chute: every coin lands on the same floor,
+     * spread sideways by the golden ratio, so later coins pile up overlapping the earlier ones (drawn in front).
+     */
     public static int slotX(int i) {
-        return 1 + (i % COLUMNS) * 18;
+        final double phi = (Math.sqrt(5) - 1) / 2.0;
+        return 1 + (int) (((i * phi) % 1.0) * (W - 2 - 18));
     }
 
     public static int slotY(int i) {
-        return H - 2 - 18 - (i / COLUMNS) * 18;
+        return H - 2 - 18;
     }
 
     /** Vertical offset of a coin that has just landed in slot {@code i} (negative while falling). */
