@@ -1,6 +1,8 @@
 package com.eisiadev.theavarice.wallet;
 
 import com.eisiadev.theavarice.config.AvariceConfig;
+import com.eisiadev.theavarice.currency.CurrencyGroup;
+import com.eisiadev.theavarice.currency.CurrencyGroups;
 import com.eisiadev.theavarice.currency.CurrencyTiers;
 import com.eisiadev.theavarice.network.WalletNetwork;
 import com.eisiadev.theavarice.network.WalletSyncPacket;
@@ -36,11 +38,15 @@ public final class WalletService {
 
     public static void sync(ServerPlayer player) {
         Wallet wallet = WalletCapability.get(player);
-        List<WalletEntry> entries = new ArrayList<>();
-        for (CurrencyTiers.Tier tier : CurrencyTiers.load()) {
-            entries.add(new WalletEntry(tier.id(), tier.value(), wallet.get(tier.id())));
+        List<WalletGroupView> groups = new ArrayList<>();
+        for (CurrencyGroup group : CurrencyGroups.load()) {
+            List<WalletEntry> entries = new ArrayList<>();
+            for (CurrencyTiers.Tier tier : group.tiers()) {
+                entries.add(new WalletEntry(tier.id(), tier.value(), wallet.get(tier.id())));
+            }
+            groups.add(new WalletGroupView(group.key(), group.category(), group.icon(), entries));
         }
-        WalletNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new WalletSyncPacket(entries));
+        WalletNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new WalletSyncPacket(groups));
     }
 
     public static long[] values(List<CurrencyTiers.Tier> tiers) {
@@ -59,10 +65,13 @@ public final class WalletService {
         for (int i = 0; i < counts.length; i++) wallet.set(tiers.get(i).id(), counts[i]);
     }
 
-    public static void handle(ServerPlayer player, int index, WalletAction action) {
+    public static void handle(ServerPlayer player, String groupKey, int index, WalletAction action) {
         if (!(player.containerMenu instanceof WalletMenu)) return;
 
-        List<CurrencyTiers.Tier> tiers = CurrencyTiers.load();
+        CurrencyGroup group = CurrencyGroups.find(groupKey);
+        if (group == null) return;
+
+        List<CurrencyTiers.Tier> tiers = group.tiers();
         if (index < 0 || index >= tiers.size()) return;
 
         Wallet wallet = WalletCapability.get(player);

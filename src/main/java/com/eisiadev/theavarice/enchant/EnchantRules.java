@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 public record EnchantRules(CostParams params, Map<ResourceLocation, Integer> caps,
-                           Map<ResourceLocation, Integer> naturalMax) {
+                           Map<ResourceLocation, Integer> naturalMax,
+                           Map<ResourceLocation, CostMath.CostOverride> overrides) {
 
     public static final Map<String, Integer> DEFAULT_CAPS = Map.ofEntries(
             Map.entry("minecraft:riptide", 7),
@@ -50,7 +51,8 @@ public record EnchantRules(CostParams params, Map<ResourceLocation, Integer> cap
                 AvariceConfig.WEIGHT_COMMON.get(), AvariceConfig.WEIGHT_UNCOMMON.get(),
                 AvariceConfig.WEIGHT_RARE.get(), AvariceConfig.WEIGHT_VERY_RARE.get(),
                 AvariceConfig.TREASURE_MULTIPLIER.get(), AvariceConfig.UPGRADE_MAX_LEVEL.get(),
-                List.copyOf(AvariceConfig.LEVEL_CAP_OVERRIDES.get()));
+                List.copyOf(AvariceConfig.LEVEL_CAP_OVERRIDES.get()),
+                List.copyOf(AvariceConfig.COST_OVERRIDES.get()));
         if (cachedServer != null && signature.equals(cachedSignature)) return cachedServer;
 
         CostParams params = new CostParams(
@@ -87,7 +89,22 @@ public record EnchantRules(CostParams params, Map<ResourceLocation, Integer> cap
             }
         }
 
-        cachedServer = new EnchantRules(params, Map.copyOf(caps), Map.copyOf(naturalMax));
+        Map<ResourceLocation, CostMath.CostOverride> overrides = new HashMap<>();
+        for (String raw : AvariceConfig.COST_OVERRIDES.get()) {
+            String[] parts = raw.split("=");
+            if (parts.length != 2) continue;
+            ResourceLocation id = ResourceLocation.tryParse(parts[0].trim());
+            String[] values = parts[1].split(",");
+            if (id == null || values.length != 2) continue;
+            try {
+                double multiplier = Double.parseDouble(values[0].trim());
+                double growth = Double.parseDouble(values[1].trim());
+                if (multiplier > 0 && growth >= 1.0) overrides.put(id, new CostMath.CostOverride(multiplier, growth));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        cachedServer = new EnchantRules(params, Map.copyOf(caps), Map.copyOf(naturalMax), Map.copyOf(overrides));
         cachedSignature = signature;
         return cachedServer;
     }
@@ -108,6 +125,8 @@ public record EnchantRules(CostParams params, Map<ResourceLocation, Integer> cap
 
     public CostMath.Curve curve(ResourceLocation id, Enchantment enchantment) {
         double weight = params.weight(enchantment.getRarity().ordinal(), enchantment.isTreasureOnly());
-        return new CostMath.Curve(weight, naturalMaxFor(id, enchantment), capFor(id), enchantment.isCurse());
+        CostMath.CostOverride override = overrides.getOrDefault(id, CostMath.CostOverride.NONE);
+        return new CostMath.Curve(weight * override.multiplier(), naturalMaxFor(id, enchantment), capFor(id),
+                enchantment.isCurse(), override.growth());
     }
 }

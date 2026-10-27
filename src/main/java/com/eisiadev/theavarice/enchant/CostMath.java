@@ -15,7 +15,16 @@ public final class CostMath {
 
     private CostMath() {}
 
-    public record Curve(double weight, int vanillaMax, int cap, boolean curse) {}
+    /**
+     * @param weight rarity weight, already multiplied by any per-enchant cost multiplier
+     * @param growth extra per-level growth factor: step(L) is multiplied by growth^(L-1). 1 = none.
+     */
+    public record Curve(double weight, int vanillaMax, int cap, boolean curse, double growth) {}
+
+    /** Per-enchant cost tuning from the {@code costOverrides} config. */
+    public record CostOverride(double multiplier, double growth) {
+        public static final CostOverride NONE = new CostOverride(1.0, 1.0);
+    }
 
     public record Change(Curve curve, int current, int purchased, int target) {}
 
@@ -37,6 +46,9 @@ public final class CostMath {
             return p.curseBaseCost() * c.weight() * StrictMath.pow(lv, p.exponent());
         }
         double v = p.baseCost() * c.weight() * StrictMath.pow(lv, p.exponent());
+        if (c.growth() > 1.0) {
+            v *= StrictMath.pow(c.growth(), lv - 1);
+        }
         int start = Math.max(c.vanillaMax(), c.cap() / 2);
         if (c.cap() > start && level > start) {
             double x = (double) (level - start) / (double) (c.cap() - start);

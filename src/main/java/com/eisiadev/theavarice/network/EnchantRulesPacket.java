@@ -1,6 +1,7 @@
 package com.eisiadev.theavarice.network;
 
 import com.eisiadev.theavarice.enchant.ClientEnchantState;
+import com.eisiadev.theavarice.enchant.CostMath;
 import com.eisiadev.theavarice.enchant.CostParams;
 import com.eisiadev.theavarice.enchant.EnchantRules;
 import net.minecraft.network.FriendlyByteBuf;
@@ -33,6 +34,12 @@ public final class EnchantRulesPacket {
         buf.writeVarInt(p.globalMaxLevel());
         writeMap(buf, packet.rules.caps());
         writeMap(buf, packet.rules.naturalMax());
+        buf.writeVarInt(packet.rules.overrides().size());
+        packet.rules.overrides().forEach((id, override) -> {
+            buf.writeResourceLocation(id);
+            buf.writeDouble(override.multiplier());
+            buf.writeDouble(override.growth());
+        });
     }
 
     private static void writeMap(FriendlyByteBuf buf, Map<ResourceLocation, Integer> map) {
@@ -64,9 +71,14 @@ public final class EnchantRulesPacket {
         int globalMax = buf.readVarInt();
         Map<ResourceLocation, Integer> caps = readMap(buf);
         Map<ResourceLocation, Integer> naturalMax = readMap(buf);
+        int overrideCount = buf.readVarInt();
+        Map<ResourceLocation, CostMath.CostOverride> overrides = new HashMap<>();
+        for (int i = 0; i < overrideCount; i++) {
+            overrides.put(buf.readResourceLocation(), new CostMath.CostOverride(buf.readDouble(), buf.readDouble()));
+        }
         return new EnchantRulesPacket(new EnchantRules(
                 new CostParams(base, exponent, steepness, refund, natural, curse, weights, treasure, globalMax),
-                caps, naturalMax));
+                caps, naturalMax, Map.copyOf(overrides)));
     }
 
     public static void handle(EnchantRulesPacket packet, Supplier<NetworkEvent.Context> context) {

@@ -21,3 +21,19 @@ description='''${mod_description}'''
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+# Optional: Advent of Ascension 3 coins in the wallet's "Coins" tab.
+[[dependencies.${mod_id}]]
+    modId="aoa3"
+    mandatory=false
+    versionRange="[0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Optional: Advent of Descension tokens in the wallet's "Tokens" tab.
+[[dependencies.${mod_id}]]
+    modId="aod3"
+    mandatory=false
+    versionRange="[0,)"
+    ordering="AFTER"
+    side="BOTH"

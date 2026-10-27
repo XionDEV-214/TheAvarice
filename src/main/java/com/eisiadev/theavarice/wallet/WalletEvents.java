@@ -2,6 +2,8 @@ package com.eisiadev.theavarice.wallet;
 
 import com.eisiadev.theavarice.TheAvarice;
 import com.eisiadev.theavarice.config.AvariceConfig;
+import com.eisiadev.theavarice.currency.CurrencyGroup;
+import com.eisiadev.theavarice.currency.CurrencyGroups;
 import com.eisiadev.theavarice.currency.CurrencyTiers;
 import com.eisiadev.theavarice.util.SoundHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -17,7 +19,6 @@ import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import java.util.List;
 
 @Mod.EventBusSubscriber(modid = TheAvarice.MOD_ID)
 public final class WalletEvents {
@@ -50,19 +51,13 @@ public final class WalletEvents {
         if (stack.isEmpty() || stack.hasTag()) return;
         if (!isAllowedToTake(itemEntity, player)) return;
 
-        List<CurrencyTiers.Tier> tiers = CurrencyTiers.load();
-        CurrencyTiers.Tier matched = null;
-        for (CurrencyTiers.Tier tier : tiers) {
-            if (tier.item() == stack.getItem()) {
-                matched = tier;
-                break;
-            }
-        }
-        if (matched == null) return;
+        CurrencyGroup group = CurrencyGroups.findByItem(stack.getItem());
+        if (group == null) return;
+        CurrencyTiers.Tier matched = group.find(stack.getItem());
 
         Wallet wallet = WalletCapability.get(player);
         wallet.add(matched.id(), stack.getCount());
-        wallet.normalize(tiers);
+        wallet.normalize(group.tiers());
 
         stack.setCount(0);
         event.setResult(Event.Result.ALLOW);

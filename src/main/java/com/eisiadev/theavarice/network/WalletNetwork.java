@@ -8,7 +8,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class WalletNetwork {
 
-    private static final String VERSION = "2";
+    private static final String VERSION = "4";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(TheAvarice.MOD_ID, "main"),
