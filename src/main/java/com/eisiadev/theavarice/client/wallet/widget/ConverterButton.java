@@ -101,6 +101,7 @@ public class ConverterButton extends WalletWidget<ConverterButton> implements In
             if (!hovered) Gfx.glow(g, 0, 0, w, h, Gfx.AMBER, (int) (40 + 50 * p));
         }
         float cy = h / 2f - 0.5f + (pressed ? 1 : 0);
-        Gfx.arrow(g, w / 2f, cy, up, 3, arrow);
+        // Cheap tiers are on the left: exchanging up moves value to the right.
+        Gfx.arrow(g, w / 2f, cy, !up, 3, arrow);
     }
 }

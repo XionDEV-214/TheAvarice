@@ -91,48 +91,49 @@ public class LedDisplay extends WalletWidget<LedDisplay> {
         }
     }
 
+    /**
+     * Seven-segment style: digit cells right-aligned with a separator after every third digit, lit for the real
+     * number and unlit ("8" / ",") for the rest of the window, so grouping always reads the same.
+     */
     private void drawNumber(GuiGraphics g, BigInteger total, int w) {
         float right = w - 6;
         float left = NUMBER_LEFT;
-        String text = view.full(total);
+        String digits = total.abs().toString();
         float scale = BIG;
-        if (measure(text, scale) > right - left) scale = 1f;
-        if (measure(text, scale) > right - left) {
-            text = WalletView.compact(total);
-            scale = BIG;
+        if (measureDigits(digits.length(), scale) > right - left) scale = 1f;
+        if (measureDigits(digits.length(), scale) > right - left) {
+            String text = WalletView.compact(total);
+            Gfx.textRight(g, text, right, 11, BIG, Gfx.LED_ON, false);
+            return;
         }
         float y = scale == BIG ? 11 : 13;
-
-        // Lit characters right-aligned, then unlit ghost cells continue to the left edge.
         float x = right;
-        for (int i = text.length() - 1; i >= 0; i--) {
-            char c = text.charAt(i);
-            float cw = cell(c, scale);
-            x -= cw;
-            if (Character.isDigit(c)) Gfx.text(g, "8", x, y, scale, Gfx.LED_GHOST, false);
-            Gfx.text(g, String.valueOf(c), x + 0.5f * scale, y + 0.5f * scale, scale, 0x40205A10, false);
-            Gfx.text(g, String.valueOf(c), x, y, scale, Gfx.LED_ON, false);
-        }
-        int digits = 0;
-        for (int i = 0; i < text.length(); i++) if (Character.isDigit(text.charAt(i))) digits++;
-        while (x - cell('8', scale) >= left) {
-            if (digits % 3 == 0 && digits > 0 && x - cell(',', scale) - cell('8', scale) >= left && text.indexOf(',') >= 0) {
-                x -= cell(',', scale);
-                Gfx.text(g, ",", x, y, scale, Gfx.LED_GHOST, false);
+        for (int k = 0; ; k++) {
+            if (k > 0 && k % 3 == 0) {
+                float cw = cell(',', scale);
+                if (x - cw - cell('8', scale) < left) break;
+                x -= cw;
+                boolean lit = k < digits.length();
+                Gfx.text(g, ",", x, y, scale, lit ? Gfx.LED_ON : Gfx.LED_GHOST, false);
             }
-            x -= cell('8', scale);
+            float cw = cell('8', scale);
+            if (x - cw < left) break;
+            x -= cw;
             Gfx.text(g, "8", x, y, scale, Gfx.LED_GHOST, false);
-            digits++;
+            if (k < digits.length()) {
+                String c = String.valueOf(digits.charAt(digits.length() - 1 - k));
+                Gfx.text(g, c, x + 0.5f * scale, y + 0.5f * scale, scale, 0x40205A10, false);
+                Gfx.text(g, c, x, y, scale, Gfx.LED_ON, false);
+            }
         }
+    }
+
+    private static float measureDigits(int count, float scale) {
+        return count * cell('8', scale) + Math.max(0, (count - 1) / 3) * cell(',', scale);
     }
 
     private static float cell(char c, float scale) {
         return (Character.isDigit(c) ? 6 : Gfx.width(String.valueOf(c))) * scale;
     }
 
-    private static float measure(String text, float scale) {
-        float total = 0;
-        for (int i = 0; i < text.length(); i++) total += cell(text.charAt(i), scale);
-        return total;
-    }
 }

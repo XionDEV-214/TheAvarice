@@ -7,6 +7,7 @@ import com.eisiadev.theavarice.wallet.WalletAction;
 import com.eisiadev.theavarice.wallet.WalletEntry;
 import com.eisiadev.theavarice.wallet.WalletGroupView;
 import com.eisiadev.theavarice.wallet.ui.WalletUI;
+import brachy.modularui.value.sync.BooleanSyncValue;
 import brachy.modularui.value.sync.LongSyncValue;
 import brachy.modularui.value.sync.PanelSyncManager;
 import net.minecraft.Util;
@@ -50,26 +51,25 @@ public final class WalletView {
 
     public enum Status { READY, DISPENSE, EXCHANGE, INCOMING, DENIED }
 
+    public enum Page { WALLET, ENCHANT }
+
     public enum LineKind { OUT, IN, EXCHANGE }
 
     public record ReceiptLine(int serial, LineKind kind, String text, long time) {}
-
-    public record Drop(ItemStack stack, long time, int slot) {}
 
     // Remembered for the session, like the old screen's tabs.
     private static CurrencyGroup.Category lastCategory = CurrencyGroup.Category.MAIN;
     private static int lastRegion = 0;
     private static Mode lastMode = Mode.STACK;
     private static int receiptSerial = 0;
+    private static Page lastPage = Page.WALLET;
 
     private static final int MAX_RECEIPT = 24;
-    private static final int MAX_DROPS = 10;
     private static final long PENDING_TIMEOUT = 3000;
     private static final long STATUS_TIME = 900;
-    public static final long DROP_LIFETIME = 4500;
-    public static final long COLLECT_TIME = 260;
 
     private final PanelSyncManager sync;
+    private final BooleanSyncValue auto;
     private final Component title;
     private final List<WalletGroupView> groups;
     private final LongSyncValue[][] counts;
@@ -81,9 +81,6 @@ public final class WalletView {
     private final NumberFormat format = NumberFormat.getIntegerInstance(Locale.US);
 
     private final Deque<ReceiptLine> receipt = new ArrayDeque<>();
-    private final List<Drop> drops = new ArrayList<>();
-    private int dropSlot;
-    private long collectStart = -1;
 
     private int pendingGroup = -1;
     private int pendingIndex = -1;
@@ -106,8 +103,10 @@ public final class WalletView {
 
     public int regionScroll;
 
-    public WalletView(PanelSyncManager sync, Component title, List<WalletGroupView> groups, LongSyncValue[][] counts) {
+    public WalletView(PanelSyncManager sync, Component title, List<WalletGroupView> groups, LongSyncValue[][] counts,
+                      BooleanSyncValue auto) {
         this.sync = sync;
+        this.auto = auto;
         this.title = title;
         this.groups = groups;
         this.counts = counts;
@@ -322,7 +321,7 @@ public final class WalletView {
             return;
         }
         send(g, i, action);
-        sound(net.minecraft.sounds.SoundEvents.CHAIN_PLACE, 1.6F, 0.6F);
+        click(1.6F);
     }
 
     /** {@code boundary} is the index of the lower tier: exchange between tiers {@code boundary - 1} and {@code boundary}. */
@@ -357,10 +356,41 @@ public final class WalletView {
         sound(net.minecraft.sounds.SoundEvents.DISPENSER_FAIL, 1.6F, 0.4F);
     }
 
+    /** Asks the server to move everything in the coin-out tray into the inventory now. */
     public void collect() {
-        if (drops.isEmpty() || collectStart >= 0) return;
-        collectStart = Util.getMillis();
-        sound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 1.2F, 0.5F);
+        sync.callSyncedAction(WalletUI.ACTION_COLLECT);
+    }
+
+    public boolean autoDeposit() {
+        return auto.getBoolValue();
+    }
+
+    public void toggleAutoDeposit() {
+        sync.callSyncedAction(WalletUI.ACTION_TOGGLE_AUTO);
+        click(autoDeposit() ? 0.8F : 1.3F);
+    }
+
+    public PanelSyncManager sync() {
+        return sync;
+    }
+
+    // ---------- Pages ----------
+
+    public Page page() {
+        return lastPage;
+    }
+
+    public void togglePage() {
+        lastPage = lastPage == Page.WALLET ? Page.ENCHANT : Page.WALLET;
+        click(1.0F);
+    }
+
+    /** Index of the main (configured) currency group, which pays for enchantments; -1 if there is none. */
+    public int mainGroup() {
+        for (int g = 0; g < groups.size(); g++) {
+            if (groups.get(g).key().equals(CurrencyGroup.MAIN_KEY)) return g;
+        }
+        return -1;
     }
 
     // ---------- Hover links ----------
@@ -401,14 +431,6 @@ public final class WalletView {
         return receipt.size();
     }
 
-    public List<Drop> drops() {
-        return drops;
-    }
-
-    public long collectStart() {
-        return collectStart;
-    }
-
     /** Compares balances with last tick and turns differences into receipt lines, chute coins and flashes. */
     public void tick() {
         long now = Util.getMillis();
@@ -429,13 +451,6 @@ public final class WalletView {
             if (changed) describe(g, deltas, now);
         }
 
-        if (collectStart >= 0 && now - collectStart > COLLECT_TIME) {
-            drops.clear();
-            collectStart = -1;
-        } else if (collectStart < 0 && !drops.isEmpty()
-                && now - drops.get(drops.size() - 1).time() > DROP_LIFETIME) {
-            collect();
-        }
     }
 
     private void describe(int g, long[] deltas, long now) {
@@ -448,7 +463,6 @@ public final class WalletView {
                     long out = -deltas[index];
                     if (out > 0) {
                         line(LineKind.OUT, "-" + compact(out) + " " + name(g, index), now);
-                        drop(g, index, out, now);
                         setStatus(Status.DISPENSE);
                         deltas[index] = 0;
                     }
@@ -487,20 +501,6 @@ public final class WalletView {
     private void line(LineKind kind, String text, long now) {
         receipt.addFirst(new ReceiptLine(++receiptSerial, kind, text, now));
         while (receipt.size() > MAX_RECEIPT) receipt.removeLast();
-    }
-
-    private void drop(int g, int i, long amount, long now) {
-        if (collectStart >= 0) {
-            drops.clear();
-            collectStart = -1;
-        }
-        // One coin per withdrawal: counts would overlap in the narrow chute, and the receipt has the amount.
-        ItemStack stack = stacks[g][i].copy();
-        if (stack.isEmpty()) return;
-        stack.setCount(1);
-        drops.add(new Drop(stack, now, dropSlot++));
-        while (drops.size() > MAX_DROPS) drops.remove(0);
-        sound(net.minecraft.sounds.SoundEvents.ITEM_PICKUP, 0.7F, 0.35F);
     }
 
     // ---------- Formatting ----------

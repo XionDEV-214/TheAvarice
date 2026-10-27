@@ -13,6 +13,16 @@ import java.util.Map;
 public class Wallet {
 
     private final Map<ResourceLocation, Long> balances = new LinkedHashMap<>();
+    /** Whether currency picked up from the ground goes straight into the wallet. */
+    private boolean autoDeposit = true;
+
+    public boolean autoDeposit() {
+        return autoDeposit;
+    }
+
+    public void setAutoDeposit(boolean value) {
+        autoDeposit = value;
+    }
 
     public long get(ResourceLocation id) {
         return balances.getOrDefault(id, 0L);
@@ -59,6 +69,7 @@ public class Wallet {
     public void copyFrom(Wallet other) {
         balances.clear();
         balances.putAll(other.balances);
+        autoDeposit = other.autoDeposit;
     }
 
     public CompoundTag save() {
@@ -71,11 +82,13 @@ public class Wallet {
         }
         CompoundTag root = new CompoundTag();
         root.put("balances", list);
+        root.putBoolean("autoDeposit", autoDeposit);
         return root;
     }
 
     public void load(CompoundTag root) {
         balances.clear();
+        autoDeposit = !root.contains("autoDeposit") || root.getBoolean("autoDeposit");
         ListTag list = root.getList("balances", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag tag = list.getCompound(i);

@@ -3,6 +3,7 @@ package com.eisiadev.theavarice.wallet.ui;
 import com.eisiadev.theavarice.TheAvarice;
 import com.eisiadev.theavarice.network.WalletSyncPacket;
 import com.eisiadev.theavarice.wallet.ClientWalletState;
+import com.eisiadev.theavarice.wallet.WalletCapability;
 import com.eisiadev.theavarice.wallet.WalletGroupView;
 import com.eisiadev.theavarice.wallet.WalletService;
 import brachy.modularui.api.IUIHolder;
@@ -35,7 +36,8 @@ public final class WalletUIFactory extends AbstractUIFactory<WalletGuiData> {
     }
 
     public void open(ServerPlayer player, List<WalletGroupView> groups, Component title) {
-        GuiManager.open(this, new WalletGuiData(player, groups, title), player);
+        boolean auto = WalletCapability.get(player).autoDeposit();
+        GuiManager.open(this, new WalletGuiData(player, groups, title, auto), player);
     }
 
     @Override
@@ -51,6 +53,7 @@ public final class WalletUIFactory extends AbstractUIFactory<WalletGuiData> {
     @Override
     public void writeGuiData(WalletGuiData data, FriendlyByteBuf buffer) {
         buffer.writeComponent(data.title());
+        buffer.writeBoolean(data.autoDeposit());
         WalletSyncPacket.writeGroups(buffer, data.groups());
     }
 
@@ -58,11 +61,13 @@ public final class WalletUIFactory extends AbstractUIFactory<WalletGuiData> {
     public @NotNull WalletGuiData readGuiData(Player player, FriendlyByteBuf buffer) {
         // A client asking the server to open this factory gets the server's own snapshot, never its own data.
         if (player instanceof ServerPlayer serverPlayer) {
-            return new WalletGuiData(serverPlayer, WalletService.snapshot(serverPlayer), WalletService.title());
+            return new WalletGuiData(serverPlayer, WalletService.snapshot(serverPlayer), WalletService.title(),
+                    WalletCapability.get(serverPlayer).autoDeposit());
         }
         Component title = buffer.readComponent();
+        boolean auto = buffer.readBoolean();
         List<WalletGroupView> groups = WalletSyncPacket.readGroups(buffer);
         ClientWalletState.set(groups);
-        return new WalletGuiData(player, groups, title);
+        return new WalletGuiData(player, groups, title, auto);
     }
 }

@@ -8,8 +8,9 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class WalletNetwork {
 
-    // 5: wallet actions moved into the ModularUI wallet screen (WalletActionPacket removed).
-    private static final String VERSION = "5";
+    // 6: enchant page and wallet actions live in the ModularUI wallet screen
+    //    (WalletActionPacket, SwitchPagePacket and EnchantApplyPacket removed).
+    private static final String VERSION = "6";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(TheAvarice.MOD_ID, "main"),
@@ -28,16 +29,6 @@ public final class WalletNetwork {
                 .encoder(WalletSyncPacket::encode)
                 .decoder(WalletSyncPacket::decode)
                 .consumerMainThread(WalletSyncPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SwitchPagePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SwitchPagePacket::encode)
-                .decoder(SwitchPagePacket::decode)
-                .consumerMainThread(SwitchPagePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(EnchantApplyPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(EnchantApplyPacket::encode)
-                .decoder(EnchantApplyPacket::decode)
-                .consumerMainThread(EnchantApplyPacket::handle)
                 .add();
         CHANNEL.messageBuilder(EnchantRulesPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(EnchantRulesPacket::encode)

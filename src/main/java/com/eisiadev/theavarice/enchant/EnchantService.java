@@ -8,15 +8,13 @@ import com.eisiadev.theavarice.network.WalletNetwork;
 import com.eisiadev.theavarice.wallet.Wallet;
 import com.eisiadev.theavarice.wallet.WalletCapability;
 import com.eisiadev.theavarice.wallet.WalletService;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.network.NetworkHooks;
+import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -32,18 +30,13 @@ public final class EnchantService {
 
     public record Request(ResourceLocation id, int target) {}
 
-    public static void open(ServerPlayer player) {
-        NetworkHooks.openScreen(player,
-                new SimpleMenuProvider((id, inventory, p) -> new EnchantMenu(id, inventory),
-                        Component.translatable("gui.theavarice.enchant")));
+    public static void sendRules(ServerPlayer player) {
         WalletNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new EnchantRulesPacket(EnchantRules.server()));
-        WalletService.sync(player);
     }
 
-    public static void apply(ServerPlayer player, List<Request> requests, BigInteger expectedNet) {
-        if (!(player.containerMenu instanceof EnchantMenu menu)) return;
-
-        ItemStack stack = menu.getTarget();
+    /** Applies the requested level changes to the item in {@code slot} (the wallet screen's enchant slot). */
+    public static void apply(ServerPlayer player, IItemHandlerModifiable slot, List<Request> requests, BigInteger expectedNet) {
+        ItemStack stack = slot.getStackInSlot(0);
         if (stack.isEmpty()) {
             status(player, false, "gui.theavarice.enchant.error.no_item");
             return;
@@ -131,10 +124,7 @@ public final class EnchantService {
         ItemStack edited = stack.copy();
         EnchantNbt.writeLevels(edited, newLevels);
         EnchantNbt.writePurchased(edited, purchased);
-        menu.setTarget(EnchantNbt.finish(edited));
-        menu.broadcastChanges();
-
-        WalletService.sync(player);
+        slot.setStackInSlot(0, EnchantNbt.finish(edited));
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8F, 1.0F);
         status(player, true, net.signum() > 0 && !creative ? "gui.theavarice.enchant.done.paid"

@@ -2,20 +2,36 @@ package com.eisiadev.theavarice.client.wallet.widget;
 
 import com.eisiadev.theavarice.client.wallet.Gfx;
 import com.eisiadev.theavarice.client.wallet.WalletView;
+import brachy.modularui.api.drawable.IDrawable;
+import brachy.modularui.api.widget.IWidget;
 import brachy.modularui.screen.viewport.ModularGuiContext;
 import brachy.modularui.theme.WidgetThemeEntry;
 import brachy.modularui.widget.ParentWidget;
+import brachy.modularui.widget.scroll.HorizontalScrollData;
+import brachy.modularui.widgets.ListWidget;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The tube rack for one currency group. Only the rack of the group on screen is enabled. Tubes are laid out
- * most valuable first, with exchange buttons on each boundary between two tubes.
+ * The tube rack for one currency group, cheapest tier on the left. Only the rack of the group on screen is enabled.
+ * Sizes are tuned so 8 tiers fill the rack; groups with more tiers keep that size and scroll sideways
+ * (mouse wheel or the bar along the bottom).
  */
 public class BankWidget extends ParentWidget<BankWidget> {
 
     public static final int WIDTH = 180;
     public static final int HEIGHT = 88;
+    public static final int VISIBLE_TIERS = 8;
+    public static final int GAP = 12;
+    private static final int INNER = WIDTH - 4;
     private static final int MAX_SLOT = 44;
+    private static final int SCROLLBAR = 3;
+    private static final int PAD = 6;
+
+    private static final IDrawable SCROLL_THUMB = (context, x, y, w, h, theme) -> {
+        GuiGraphics g = context.getGraphics();
+        Gfx.rect(g, x, y, w, h, Gfx.AMBER);
+        Gfx.rect(g, x, y, w, 1, 0xFFFFD27A);
+    };
 
     private final int group;
 
@@ -26,23 +42,42 @@ public class BankWidget extends ParentWidget<BankWidget> {
 
         int n = view.tierCount(group);
         if (n == 0) return;
-        int slot = Math.min(MAX_SLOT, (WIDTH - 4) / n);
-        int column = Math.max(10, slot - 12);
-        int offset = (WIDTH - slot * n) / 2;
+        int slot = Math.min(MAX_SLOT, INNER / Math.min(n, VISIBLE_TIERS));
+        int column = Math.max(10, slot - GAP);
+        // PAD on both ends keeps the count labels of the outer tubes inside the scroll area.
+        int content = n * slot - GAP + 2 * PAD;
+        int visible = Math.min(content, VISIBLE_TIERS * slot - GAP + 2 * PAD);
 
-        for (int i = 0; i < n; i++) {
-            int slotX = offset + i * slot;
-            child(new TubeWidget(view, group, i, column, slot).pos(slotX + (slot - column) / 2, 0));
-            if (i > 0 && view.ratio(group, i) > 0) {
-                int bx = slotX - ConverterButton.SIZE / 2;
-                child(new ConverterButton(view, group, i, true).pos(bx, 22));
-                child(new ConverterButton(view, group, i, false).pos(bx, 34));
+        ListWidget<IWidget, ?> rack = new ListWidget<>();
+        rack.scrollDirection(new HorizontalScrollData(false, SCROLLBAR).texture(SCROLL_THUMB));
+        rack.pos((WIDTH - visible) / 2, 0).size(visible, HEIGHT);
+
+        // Display order is cheapest first; tier index 0 is the most valuable.
+        rack.child(new ParentWidget<>().size(PAD, HEIGHT));
+        for (int p = 0; p < n; p++) {
+            int tier = n - 1 - p;
+            rack.child(new TubeWidget(view, group, tier, column, slot));
+            if (p < n - 1 && view.ratio(group, tier) > 0) {
+                rack.child(new ExchangeGap(view, group, tier));
+            } else if (p < n - 1) {
+                rack.child(new ParentWidget<>().size(GAP, HEIGHT));
             }
         }
+        rack.child(new ParentWidget<>().size(PAD, HEIGHT));
+        child(rack);
     }
 
     public int group() {
         return group;
+    }
+
+    /** The 12px space between two tubes holding the two exchange buttons for that pair. */
+    private static final class ExchangeGap extends ParentWidget<ExchangeGap> {
+        ExchangeGap(WalletView view, int group, int boundary) {
+            size(GAP, HEIGHT);
+            child(new ConverterButton(view, group, boundary, true).pos(1, 22));
+            child(new ConverterButton(view, group, boundary, false).pos(1, 34));
+        }
     }
 
     @Override

@@ -41,7 +41,7 @@
   "gui.theavarice.wallet.rail.none": "이 서버에 설정된 화폐가 없습니다",
   "gui.theavarice.wallet.rail.single": "%s (단일 화폐)",
   "gui.theavarice.wallet.chute": "배출구",
-  "gui.theavarice.wallet.chute.hint": "배출된 화폐는 이미 인벤토리에 들어 있습니다. 클릭하면 트레이를 비웁니다.",
+  "gui.theavarice.wallet.chute.hint": "코인을 클릭(Shift+클릭)해서 꺼내거나, 배출구를 클릭해 전부 수령하세요",
   "gui.theavarice.wallet.receipt": "영수증",
   "gui.theavarice.wallet.receipt.header": "* 영수증 *",
   "gui.theavarice.wallet.receipt.empty": "기록 없음",
@@ -96,5 +96,16 @@
   "gui.theavarice.enchant.error.insufficient": "화폐가 부족합니다",
   "gui.theavarice.enchant.done": "적용했습니다",
   "gui.theavarice.enchant.done.paid": "화폐를 지불하고 적용했습니다",
-  "gui.theavarice.enchant.done.refunded": "적용하고 화폐를 돌려받았습니다"
+  "gui.theavarice.enchant.done.refunded": "적용하고 화폐를 돌려받았습니다",
+  "gui.theavarice.wallet.banner.in": "투입구",
+  "gui.theavarice.wallet.coin_in": "투입구",
+  "gui.theavarice.wallet.coin_in.hint": "화폐를 넣으면 (또는 인벤토리에서 Shift+클릭) 지갑에 입금됩니다",
+  "gui.theavarice.wallet.auto": "자동 입금",
+  "gui.theavarice.wallet.auto.on": "켜짐: 주운 화폐가 바로 지갑에 들어갑니다",
+  "gui.theavarice.wallet.auto.off": "꺼짐: 주운 화폐가 인벤토리에 남습니다",
+  "gui.theavarice.wallet.auto.hint": "클릭해서 전환",
+  "gui.theavarice.wallet.auto.label": "자동",
+  "gui.theavarice.wallet.auto.label.on": "ON",
+  "gui.theavarice.wallet.auto.label.off": "OFF",
+  "gui.theavarice.wallet.chute.auto": "%s초 뒤 자동으로 인벤토리에 들어갑니다"
 }

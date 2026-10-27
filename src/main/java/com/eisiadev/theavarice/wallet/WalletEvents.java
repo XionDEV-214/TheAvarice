@@ -56,6 +56,7 @@ public final class WalletEvents {
         CurrencyTiers.Tier matched = group.find(stack.getItem());
 
         Wallet wallet = WalletCapability.get(player);
+        if (!wallet.autoDeposit()) return;
         wallet.add(matched.id(), stack.getCount());
         wallet.normalize(group.tiers());
 
@@ -66,10 +67,7 @@ public final class WalletEvents {
             SoundHelper.play(player, raw);
         }
 
-        // The wallet screen tracks its balances through ModularUI sync values; only the enchant screen needs a push.
-        if (player.containerMenu instanceof com.eisiadev.theavarice.enchant.EnchantMenu) {
-            WalletService.sync(player);
-        }
+        // The wallet screen tracks balances through ModularUI sync values, so nothing has to be pushed here.
     }
 
     private static boolean isAllowedToTake(ItemEntity itemEntity, Player player) {

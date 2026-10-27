@@ -41,7 +41,7 @@
   "gui.theavarice.wallet.rail.none": "No currency is configured on this server",
   "gui.theavarice.wallet.rail.single": "%s (single tier)",
   "gui.theavarice.wallet.chute": "Coin Out",
-  "gui.theavarice.wallet.chute.hint": "Dispensed coins are already in your inventory. Click to clear the tray.",
+  "gui.theavarice.wallet.chute.hint": "Click or shift-click a coin to take it, click the chute to take everything",
   "gui.theavarice.wallet.receipt": "Receipt",
   "gui.theavarice.wallet.receipt.header": "* RECEIPT *",
   "gui.theavarice.wallet.receipt.empty": "no activity",
@@ -96,5 +96,16 @@
   "gui.theavarice.enchant.error.insufficient": "Not enough currency",
   "gui.theavarice.enchant.done": "Applied",
   "gui.theavarice.enchant.done.paid": "Paid and applied",
-  "gui.theavarice.enchant.done.refunded": "Applied and refunded"
+  "gui.theavarice.enchant.done.refunded": "Applied and refunded",
+  "gui.theavarice.wallet.banner.in": "COIN IN",
+  "gui.theavarice.wallet.coin_in": "Coin In",
+  "gui.theavarice.wallet.coin_in.hint": "Put currency here (or shift-click it in your inventory) to deposit it",
+  "gui.theavarice.wallet.auto": "Auto Deposit",
+  "gui.theavarice.wallet.auto.on": "ON: currency you pick up goes straight into the wallet",
+  "gui.theavarice.wallet.auto.off": "OFF: currency you pick up stays in your inventory",
+  "gui.theavarice.wallet.auto.hint": "Click to switch",
+  "gui.theavarice.wallet.auto.label": "AUTO",
+  "gui.theavarice.wallet.auto.label.on": "ON",
+  "gui.theavarice.wallet.auto.label.off": "OFF",
+  "gui.theavarice.wallet.chute.auto": "Collected automatically after %s seconds"
 }

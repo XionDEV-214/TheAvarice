@@ -17,7 +17,7 @@ import java.util.Locale;
 /** Vertical tab on the left edge of the panel: main currency / AoA coins / AoD tokens. */
 public class CategoryTab extends WalletWidget<CategoryTab> implements Interactable {
 
-    public static final int W = 28;
+    public static final int W = 30;
     public static final int H = 24;
 
     private final CurrencyGroup.Category category;
@@ -39,27 +39,26 @@ public class CategoryTab extends WalletWidget<CategoryTab> implements Interactab
 
     @Override
     protected void render(ModularGuiContext context, GuiGraphics g, int w, int h, long now) {
+        // Tabs sit behind the panel (the panel body is drawn after them); the selected one sticks out further.
         boolean active = view.category() == category;
         boolean hovered = isHovering();
-        int x0 = active ? 0 : 3;
-        int right = w + (active ? 3 : 0);
+        int x0 = active ? 0 : 4;
 
-        Gfx.rect(g, x0, 0, right - x0, h, Gfx.FRAME);
+        Gfx.rect(g, x0, 0, w - x0, h, Gfx.FRAME);
         if (active) {
-            Gfx.vgrad(g, x0 + 1, 1, right - x0 - 1, h - 2, Gfx.PLATE_TOP, Gfx.PLATE_BOTTOM);
-            Gfx.rect(g, x0 + 1, 1, right - x0 - 1, 1, Gfx.BEVEL_HI);
+            Gfx.vgrad(g, x0 + 1, 1, w - x0 - 1, h - 2, Gfx.PLATE_TOP, Gfx.PLATE_BOTTOM);
+            Gfx.rect(g, x0 + 1, 1, w - x0 - 1, 1, Gfx.BEVEL_HI);
             Gfx.rect(g, x0 + 1, 1, 2, h - 2, Gfx.CYAN);
             Gfx.glow(g, x0 + 1, 1, 2, h - 2, Gfx.CYAN, 60);
         } else {
-            Gfx.vgrad(g, x0 + 1, 1, right - x0 - 2, h - 2, hovered ? 0xFF353C45 : 0xFF262B31, hovered ? 0xFF262B31 : 0xFF1A1E22);
-            Gfx.rect(g, x0 + 1, 1, right - x0 - 2, 1, 0xFF444C56);
+            Gfx.vgrad(g, x0 + 1, 1, w - x0 - 1, h - 2, hovered ? 0xFF353C45 : 0xFF262B31, hovered ? 0xFF262B31 : 0xFF1A1E22);
+            Gfx.rect(g, x0 + 1, 1, w - x0 - 1, 1, 0xFF444C56);
         }
 
         List<Integer> groups = view.groupsOf(category);
         if (groups.isEmpty()) return;
-        int group = groups.get(0);
-        ItemStack icon = view.icon(group);
+        ItemStack icon = view.icon(groups.get(0));
         g.flush();
-        GuiDraw.drawItem(g, icon, (x0 + w) / 2 - 6 + (active ? 1 : 0), (h - 16) / 2, 16, 16, context.getCurrentDrawingZ());
+        GuiDraw.drawItem(g, icon, x0 + (w - 3 - x0 - 16) / 2 + 1, (h - 16) / 2, 16, 16, context.getCurrentDrawingZ());
     }
 }
