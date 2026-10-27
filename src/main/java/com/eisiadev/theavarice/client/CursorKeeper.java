@@ -2,6 +2,8 @@ package com.eisiadev.theavarice.client;
 
 import com.eisiadev.theavarice.TheAvarice;
 import com.eisiadev.theavarice.mixin.client.MouseHandlerAccessor;
+import com.eisiadev.theavarice.wallet.ui.WalletUI;
+import brachy.modularui.screen.ModularScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenEvent;
@@ -34,7 +36,8 @@ public final class CursorKeeper {
             deadline = 0L;
             return;
         }
-        if (!(event.getScreen() instanceof WalletScreen) && !(event.getScreen() instanceof EnchantScreen)) return;
+        if (!(event.getScreen() instanceof EnchantScreen)
+                && !ModularScreen.isScreen(event.getScreen(), TheAvarice.MOD_ID, WalletUI.PANEL_NAME)) return;
         deadline = 0L;
 
         Minecraft minecraft = Minecraft.getInstance();

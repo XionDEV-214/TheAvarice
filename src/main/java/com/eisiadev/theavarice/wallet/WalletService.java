@@ -7,11 +7,11 @@ import com.eisiadev.theavarice.currency.CurrencyTiers;
 import com.eisiadev.theavarice.network.WalletNetwork;
 import com.eisiadev.theavarice.network.WalletSyncPacket;
 import com.eisiadev.theavarice.util.SoundHelper;
+import com.eisiadev.theavarice.wallet.ui.WalletContainer;
+import com.eisiadev.theavarice.wallet.ui.WalletUIFactory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayList;
@@ -23,20 +23,20 @@ public final class WalletService {
 
     private WalletService() {}
 
-    public static void open(ServerPlayer player) {
+    public static Component title() {
         String configured = AvariceConfig.WALLET_TITLE.get();
-        Component title = configured.isBlank()
+        return configured.isBlank()
                 ? Component.translatable("gui.theavarice.wallet")
                 : Component.literal(configured);
-
-        NetworkHooks.openScreen(player,
-                new SimpleMenuProvider((id, inventory, p) -> new WalletMenu(id, inventory), title));
-
-        SoundHelper.play(player, AvariceConfig.WALLET_OPEN_SOUND.get());
-        sync(player);
     }
 
-    public static void sync(ServerPlayer player) {
+    public static void open(ServerPlayer player) {
+        WalletUIFactory.INSTANCE.open(player, snapshot(player), title());
+        SoundHelper.play(player, AvariceConfig.WALLET_OPEN_SOUND.get());
+    }
+
+    /** Every group the server handles with the player's current balance of each tier, main group first. */
+    public static List<WalletGroupView> snapshot(ServerPlayer player) {
         Wallet wallet = WalletCapability.get(player);
         List<WalletGroupView> groups = new ArrayList<>();
         for (CurrencyGroup group : CurrencyGroups.load()) {
@@ -44,9 +44,14 @@ public final class WalletService {
             for (CurrencyTiers.Tier tier : group.tiers()) {
                 entries.add(new WalletEntry(tier.id(), tier.value(), wallet.get(tier.id())));
             }
-            groups.add(new WalletGroupView(group.key(), group.category(), group.icon(), entries));
+            groups.add(new WalletGroupView(group.key(), group.category(), group.icon(), List.copyOf(entries)));
         }
-        WalletNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new WalletSyncPacket(groups));
+        return List.copyOf(groups);
+    }
+
+    /** Pushes the snapshot to {@link ClientWalletState} (used by the enchant screen). */
+    public static void sync(ServerPlayer player) {
+        WalletNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new WalletSyncPacket(snapshot(player)));
     }
 
     public static long[] values(List<CurrencyTiers.Tier> tiers) {
@@ -65,8 +70,12 @@ public final class WalletService {
         for (int i = 0; i < counts.length; i++) wallet.set(tiers.get(i).id(), counts[i]);
     }
 
+    /**
+     * Runs a wallet action requested from the wallet screen. Balances reach the client through the screen's
+     * sync values, so nothing is sent back from here.
+     */
     public static void handle(ServerPlayer player, String groupKey, int index, WalletAction action) {
-        if (!(player.containerMenu instanceof WalletMenu)) return;
+        if (!(player.containerMenu instanceof WalletContainer)) return;
 
         CurrencyGroup group = CurrencyGroups.find(groupKey);
         if (group == null) return;
@@ -86,8 +95,6 @@ public final class WalletService {
             case CONVERT_DOWN -> convertDown(wallet, tiers, index, false);
             case CONVERT_DOWN_ALL -> convertDown(wallet, tiers, index, true);
         }
-
-        sync(player);
     }
 
     private static void withdraw(ServerPlayer player, Wallet wallet, CurrencyTiers.Tier tier, long requested) {

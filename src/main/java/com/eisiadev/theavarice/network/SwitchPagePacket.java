@@ -2,8 +2,8 @@ package com.eisiadev.theavarice.network;
 
 import com.eisiadev.theavarice.enchant.EnchantMenu;
 import com.eisiadev.theavarice.enchant.EnchantService;
-import com.eisiadev.theavarice.wallet.WalletMenu;
 import com.eisiadev.theavarice.wallet.WalletService;
+import com.eisiadev.theavarice.wallet.ui.WalletContainer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -33,7 +33,7 @@ public final class SwitchPagePacket {
         if (player == null) return;
         switch (packet.page) {
             case ENCHANT -> {
-                if (player.containerMenu instanceof WalletMenu) EnchantService.open(player);
+                if (player.containerMenu instanceof WalletContainer) EnchantService.open(player);
             }
             case WALLET -> {
                 if (player.containerMenu instanceof EnchantMenu) WalletService.open(player);

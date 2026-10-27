@@ -8,7 +8,8 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class WalletNetwork {
 
-    private static final String VERSION = "4";
+    // 5: wallet actions moved into the ModularUI wallet screen (WalletActionPacket removed).
+    private static final String VERSION = "5";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(TheAvarice.MOD_ID, "main"),
@@ -22,11 +23,6 @@ public final class WalletNetwork {
                 .encoder(OpenWalletPacket::encode)
                 .decoder(OpenWalletPacket::decode)
                 .consumerMainThread(OpenWalletPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(WalletActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(WalletActionPacket::encode)
-                .decoder(WalletActionPacket::decode)
-                .consumerMainThread(WalletActionPacket::handle)
                 .add();
         CHANNEL.messageBuilder(WalletSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(WalletSyncPacket::encode)

@@ -66,8 +66,8 @@ public final class WalletEvents {
             SoundHelper.play(player, raw);
         }
 
-        if (player.containerMenu instanceof WalletMenu
-                || player.containerMenu instanceof com.eisiadev.theavarice.enchant.EnchantMenu) {
+        // The wallet screen tracks its balances through ModularUI sync values; only the enchant screen needs a push.
+        if (player.containerMenu instanceof com.eisiadev.theavarice.enchant.EnchantMenu) {
             WalletService.sync(player);
         }
     }

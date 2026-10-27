@@ -6,6 +6,7 @@ import com.eisiadev.theavarice.registry.EnchantmentRegistry;
 import com.eisiadev.theavarice.registry.LootModifierRegistry;
 import com.eisiadev.theavarice.registry.MenuRegistry;
 import com.eisiadev.theavarice.wallet.Wallet;
+import com.eisiadev.theavarice.wallet.ui.WalletUIFactory;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -41,5 +42,6 @@ public class TheAvarice {
         LOGGER.info("[TheAvarice] Avarice enchantment registered: {}",
                 ForgeRegistries.ENCHANTMENTS.getKey(EnchantmentRegistry.AVARICE.get()));
         event.enqueueWork(WalletNetwork::register);
+        event.enqueueWork(WalletUIFactory::register);
     }
 }
