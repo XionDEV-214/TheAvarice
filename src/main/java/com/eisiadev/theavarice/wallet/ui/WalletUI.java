@@ -85,10 +85,14 @@ public final class WalletUI implements IUIHolder<WalletGuiData> {
                 () -> player.getCapability(WalletCapability.WALLET).map(Wallet::autoDeposit).orElse(true));
         syncManager.syncValue(SYNC_AUTO, 0, auto);
 
-        // Coin-out tray: take only. Shift-click sends coins to the inventory.
+        // Coin-out tray (stored in the player's wallet): take only. Shift-click sends coins to the inventory.
         syncManager.registerSlotGroup(new SlotGroup(SLOT_TRAY, 3, 10, true));
         for (int i = 0; i < WalletSession.TRAY_SLOTS; i++) {
-            syncManager.itemSlot(SLOT_TRAY, i, new ModularSlot(session.tray, i).accessibility(false, true).slotGroup(SLOT_TRAY));
+            int slot = i;
+            syncManager.itemSlot(SLOT_TRAY, i, new ModularSlot(session.tray, i).accessibility(false, true).slotGroup(SLOT_TRAY)
+                    .changeListener((stack, onlyAmount, client, init) -> {
+                        if (client && init) session.markInitial(slot, stack);
+                    }));
         }
         // Coin-in slot: highest shift-click priority, so shift-clicking coins in the inventory deposits them.
         syncManager.registerSlotGroup(new SlotGroup(SLOT_DEPOSIT, 1, 300, true));
@@ -122,7 +126,6 @@ public final class WalletUI implements IUIHolder<WalletGuiData> {
                 EnchantService.apply(serverPlayer, session.target, requests, expected);
             }
         });
-        syncManager.onServerTick(session::serverTick);
 
         ModularPanel<?> panel = new ModularPanel<>(PANEL_NAME);
         panel.size(WIDTH, HEIGHT);

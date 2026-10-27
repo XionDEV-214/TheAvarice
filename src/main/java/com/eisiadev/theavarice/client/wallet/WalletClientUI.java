@@ -249,7 +249,13 @@ public final class WalletClientUI {
         side.child(chute.pos(CHUTE_X, CHUTE_Y));
         for (int i = 0; i < WalletSession.TRAY_SLOTS; i++) {
             int slot = i;
-            ItemSlot item = style(new ItemSlot()).syncHandler(WalletUI.SLOT_TRAY, i);
+            // No hover square under coins in the chute: they are loose coins, not slots.
+            ItemSlot item = style(new ItemSlot() {
+                @Override
+                public int getSlotHoverColor() {
+                    return 0;
+                }
+            }).syncHandler(WalletUI.SLOT_TRAY, i);
             item.disableThemeBackground(true);
             item.background(IDrawable.EMPTY);
             item.pos(CHUTE_X + ChuteWidget.slotX(i), CHUTE_Y + ChuteWidget.slotY(i));

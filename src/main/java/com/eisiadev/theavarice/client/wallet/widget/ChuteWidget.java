@@ -18,7 +18,8 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Coin-out chute. The tray slots (real slots, drawn on top of this widget) hold withdrawn coins until they are
- * taken: click / shift-click a coin, click the chute to collect everything, or wait for the automatic pickup.
+ * taken: click / shift-click a coin or click the chute to collect everything. Untaken coins stay in the chute,
+ * also after closing and reopening the screen.
  * This widget draws the chute, tracks the tray to animate coins falling in, and fades taken coins upwards.
  */
 public class ChuteWidget extends WalletWidget<ChuteWidget> implements Interactable {
@@ -49,8 +50,6 @@ public class ChuteWidget extends WalletWidget<ChuteWidget> implements Interactab
             t.clearText();
             t.addLine(Component.translatable("gui.theavarice.wallet.chute").withStyle(ChatFormatting.WHITE));
             t.addLine(Component.translatable("gui.theavarice.wallet.chute.hint").withStyle(ChatFormatting.GRAY));
-            t.addLine(Component.translatable("gui.theavarice.wallet.chute.auto",
-                    WalletSession.AUTO_COLLECT_TICKS / 20).withStyle(ChatFormatting.DARK_GRAY));
         });
     }
 
@@ -91,7 +90,8 @@ public class ChuteWidget extends WalletWidget<ChuteWidget> implements Interactab
             ItemStack current = session.tray.getStackInSlot(i);
             ItemStack before = last[i];
             if (before.isEmpty() && !current.isEmpty()) {
-                dropTime[i] = now;
+                // Coins already in the chute when the screen opens are just there; only new ones fall in.
+                if (!session.consumeInitial(i)) dropTime[i] = now;
             } else if (!before.isEmpty() && current.isEmpty()) {
                 // Taken onto the cursor: no effect, the coin is visibly in hand.
                 if (!ItemStack.isSameItemSameTags(carried, before)) {

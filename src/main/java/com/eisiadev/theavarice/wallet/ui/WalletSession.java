@@ -1,6 +1,8 @@
 package com.eisiadev.theavarice.wallet.ui;
 
 import com.eisiadev.theavarice.enchant.EnchantNbt;
+import com.eisiadev.theavarice.wallet.Wallet;
+import com.eisiadev.theavarice.wallet.WalletCapability;
 import com.eisiadev.theavarice.wallet.WalletService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -17,30 +19,24 @@ import java.util.function.Predicate;
  * Item storage that lives while one wallet screen is open, on both sides:
  * <ul>
  *     <li>{@link #tray}: coin-out tray. Withdrawn coins wait here until the player takes them (click / shift-click /
- *     click the chute) or they are collected automatically after a few seconds.</li>
+ *     click the chute). On the server this is the player's own {@link Wallet#tray()}, so coins left in the chute
+ *     stay there when the screen is closed and are back in the same place when it is reopened.</li>
  *     <li>{@link #deposit}: coin-in slot. Anything put in that is currency goes straight into the wallet.</li>
  *     <li>{@link #target}: the enchant page's item slot.</li>
  * </ul>
- * When the screen closes, coins still in the tray go to the inventory (or back into the wallet if it is full) and
- * the enchant item is returned.
+ * When the screen closes, the enchant item is returned; the tray is left as it is.
  */
 public final class WalletSession {
 
-    public static final int TRAY_SLOTS = 6;
-    /** Ticks without tray activity before coins in the tray are moved to the inventory. */
-    public static final int AUTO_COLLECT_TICKS = 100;
+    public static final int TRAY_SLOTS = Wallet.TRAY_SLOTS;
 
     private final Player player;
     private final boolean client;
-    private int idleTicks;
     private boolean closed;
 
-    public final ItemStackHandler tray = new ItemStackHandler(TRAY_SLOTS) {
-        @Override
-        protected void onContentsChanged(int slot) {
-            idleTicks = 0;
-        }
-    };
+    public final ItemStackHandler tray;
+    /** Client: tray slots that were filled by the first sync after opening (no falling animation for those). */
+    private final boolean[] initial = new boolean[TRAY_SLOTS];
 
     public final ItemStackHandler target = new ItemStackHandler(1) {
         @Override
@@ -59,11 +55,23 @@ public final class WalletSession {
     public WalletSession(Player player, Predicate<ItemStack> isCurrency) {
         this.player = player;
         this.client = player.level().isClientSide;
+        this.tray = client ? new ItemStackHandler(TRAY_SLOTS)
+                : player.getCapability(WalletCapability.WALLET).map(Wallet::tray).orElseGet(() -> new ItemStackHandler(TRAY_SLOTS));
         this.deposit = new DepositHandler(isCurrency);
     }
 
     public static boolean isEnchanted(ItemStack stack) {
         return !stack.isEmpty() && !EnchantNbt.read(stack).isEmpty();
+    }
+
+    public void markInitial(int slot, ItemStack stack) {
+        if (!stack.isEmpty()) initial[slot] = true;
+    }
+
+    public boolean consumeInitial(int slot) {
+        boolean was = initial[slot];
+        initial[slot] = false;
+        return was;
     }
 
     public boolean trayEmpty() {
@@ -79,18 +87,6 @@ public final class WalletSession {
             if (ItemStack.isSameItemSameTags(s, stack)) total += s.getCount();
         }
         return total;
-    }
-
-    /** Server tick: collect the tray once it has been left alone for a while. */
-    public void serverTick() {
-        if (client || closed || trayEmpty()) {
-            idleTicks = 0;
-            return;
-        }
-        if (++idleTicks >= AUTO_COLLECT_TICKS) {
-            collect();
-            idleTicks = 0;
-        }
     }
 
     /** Moves everything in the tray that fits into the player's inventory. */
@@ -113,20 +109,10 @@ public final class WalletSession {
         }
     }
 
-    /** Screen closed (also on logout / death): nothing may be lost. Safe to call more than once. */
+    /** Screen closed (also on logout / death): give the enchant item back. The tray stays in the wallet. */
     public void close() {
         if (client || closed) return;
         closed = true;
-        collect();
-        if (player instanceof ServerPlayer serverPlayer) {
-            for (int i = 0; i < TRAY_SLOTS; i++) {
-                ItemStack stack = tray.getStackInSlot(i);
-                if (stack.isEmpty()) continue;
-                ItemStack rest = WalletService.depositSilently(serverPlayer, stack);
-                if (!rest.isEmpty()) player.getInventory().placeItemBackInInventory(rest);
-                tray.setStackInSlot(i, ItemStack.EMPTY);
-            }
-        }
         ItemStack item = target.getStackInSlot(0);
         if (!item.isEmpty()) {
             target.setStackInSlot(0, ItemStack.EMPTY);
